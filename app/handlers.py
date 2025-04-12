@@ -94,7 +94,7 @@ def generate_presentation_story(prompt, extracted_data):
     
     input_data = [
             {
-                "type": "user",
+                "type": "message",
                 "text": f"""
                 Create a presentation story based on user prompt: {prompt}. 
                 Analyze all files and try to use them. User can send json data 
