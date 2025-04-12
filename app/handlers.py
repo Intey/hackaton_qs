@@ -52,7 +52,7 @@ async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
             except Exception:
                 json_text = json_part
             return {
-                "type": "user",
+                "type": "input_text",
                 "text": json_text,
             }
         case "pptx":
@@ -60,7 +60,7 @@ async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
             return {
                 "type": "input_file",
                 "filename": file_path,
-                "filedata": "\n".join(
+                "file_data": "\n".join(
                     shape.text
                     for slide in prs.slides
                     for shape in slide.shapes
@@ -69,24 +69,24 @@ async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
             }
         case "png" | "jpg":
             return {
-                "type": "input_file",
+                "type": "input_image",
                 "filename": file_path,
-                "filedata": f"data:image/{file_type};base64,{encode_base64(file_path)}",
+                "file_data": f"data:image/{file_type};base64,{encode_base64(file_path)}",
             }
-        case "cache":
-            pass
         case _:
             raise NotImplementedError(f"Not known processing method for {file_type}")
 
 
-async def extract_data_from_files(directory):
-    extracted_data = {}
+async def extract_data_from_files(directory) -> list[dict]:
+    extracted_data = []
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
         file_type = filename.split(".")[-1]
+        if file_type == "cache":
+            continue
         data = await extract_text_from_file(file_path, file_type)
         if data is not None:
-            extracted_data[filename] = data
+            extracted_data.append(data)
     return extracted_data
 
 
@@ -98,21 +98,15 @@ def encode_base64(file_path):
 
 def generate_presentation_story(prompt, extracted_data):
 
-    input_data = []
-    # Append prompt as initial message.
-    input_data.append(
+    input_data = [
         {
-            "type": "user",
-            "text": f"Create a presentation story based on user prompt: {prompt}. Analyze all files and try to use them. User can send json data that is actually aggregation info of a csv file. Use that json as a source for some total or mean values to inject them in output presentation. Make the presentiation as JSON which contains an array of slides. Each slide has template_id - the name of template which is used for the slide.",
-        }
-    )
-    # Process extracted_data messages ensuring allowed type.
-    for d in extracted_data.values():
-        text_value = d.get("text") or d.get("filedata")
-        if text_value:
-            input_data.append({"type": "user", "text": text_value})
+            "role": "user",
+            "content": f"Create a presentation story based on user prompt: {prompt}. Analyze all files and try to use them. User can send json data that is actually aggregation info of a csv file. Use that json as a source for some total or mean values to inject them in output presentation. Make the presentiation as JSON which contains an array of slides. Each slide has template_id - the name of template which is used for the slide.",
+        },
+        {"role": "user", "content": extracted_data}
+        ]
     print("RUN WITH", input_data)
-    response = client.responses.create(model="o1", input=input_data)
+    response = client.responses.create(model="o3-mini", input=input_data)
     return response.output_text
 
 
