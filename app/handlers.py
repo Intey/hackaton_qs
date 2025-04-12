@@ -15,67 +15,68 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
-    if file_type == "pdf":
-        with open(file_path, "rb") as f:
-            file = client.files.create(file=f, purpose="user_data")
-        return {
-            "type": "input_file",
-            "file_id": file.id,
-        }
-    elif file_type == "csv":
-        cache_file_path = file_path + ".cache"
-        if not os.path.exists(cache_file_path):
-            df = pd.read_csv(file_path)
-            csv_str = df.to_string(index=False)
-            print("summarize CSV")
-            result = await Runner.run(csv_agent, input=csv_str)
-            output = result.final_output
-            # async for event in result.stream_events():
-            #     if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
-            #         print(event.data.delta, end="", flush=True)
-            #         output += event.data.delta
-            print("got summary:", output)
-            with open(cache_file_path, "w") as f:
-                f.write(output)
-            print("saved to", cache_file_path)
-        else:
-            with open(cache_file_path) as f:
-                output = f.read()
-        json_part = output.split("------")[-1].strip()
-        try:
-            json_obj = json.loads(json_part)
-            json_text = json.dumps(json_obj)
-            # TODO: handle this error. Try to fix. Maybe I need to retry the
-            # agent. Better would be to fix the agent always respond with
-            # correct JSON
-        except Exception:
-            json_text = json_part
-        return {
-            "type": "user",
-            "text": json_text,
-        }
-    elif file_type == "pptx":
-        prs = Presentation(file_path)
-        return {
-            "type": "input_file",
-            "filename": file_path,
-            "filedata": "\n".join(
-                shape.text
-                for slide in prs.slides
-                for shape in slide.shapes
-                if hasattr(shape, "text")
-            ),
-        }
-    elif file_type == "png" or file_type == "jpg":
-        return {
-            "type": "input_file",
-            "filename": file_path,
-            "filedata": f"data:image/{file_type};base64,{encode_base64(file_path)}",
-        }
-    elif file_type == "cache":
-        pass
-    else:
-        raise NotImplementedError(f"Not known processing method for {file_type}")
+    match file_type:
+        case "pdf":
+            with open(file_path, "rb") as f:
+                file = client.files.create(file=f, purpose="user_data")
+            return {
+                "type": "input_file",
+                "file_id": file.id,
+            }
+        case "csv":
+            cache_file_path = file_path + ".cache"
+            if not os.path.exists(cache_file_path):
+                df = pd.read_csv(file_path)
+                csv_str = df.to_string(index=False)
+                print("summarize CSV")
+                result = await Runner.run(csv_agent, input=csv_str)
+                output = result.final_output
+                # async for event in result.stream_events():
+                #     if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
+                #         print(event.data.delta, end="", flush=True)
+                #         output += event.data.delta
+                print("got summary:", output)
+                with open(cache_file_path, "w") as f:
+                    f.write(output)
+                print("saved to", cache_file_path)
+            else:
+                with open(cache_file_path) as f:
+                    output = f.read()
+            json_part = output.split("------")[-1].strip()
+            try:
+                json_obj = json.loads(json_part)
+                json_text = json.dumps(json_obj)
+                # TODO: handle this error. Try to fix. Maybe I need to retry the
+                # agent. Better would be to fix the agent always respond with
+                # correct JSON
+            except Exception:
+                json_text = json_part
+            return {
+                "type": "user",
+                "text": json_text,
+            }
+        case "pptx":
+            prs = Presentation(file_path)
+            return {
+                "type": "input_file",
+                "filename": file_path,
+                "filedata": "\n".join(
+                    shape.text
+                    for slide in prs.slides
+                    for shape in slide.shapes
+                    if hasattr(shape, "text")
+                ),
+            }
+        case "png" | "jpg":
+            return {
+                "type": "input_file",
+                "filename": file_path,
+                "filedata": f"data:image/{file_type};base64,{encode_base64(file_path)}",
+            }
+        case "cache":
+            pass
+        case _:
+            raise NotImplementedError(f"Not known processing method for {file_type}")
 
 
 async def extract_data_from_files(directory):
