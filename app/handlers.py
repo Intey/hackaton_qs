@@ -39,10 +39,15 @@ async def extract_text_from_file(file_path, file_type):
         else:
             with open(cache_file_path) as f:
                 output = f.read()
-        result = output.split('------')[-1].strip()
+        json_part = output.split('------')[-1].strip()
+        try:
+            json_obj = json.loads(json_part)
+            json_text = json.dumps(json_obj)
+        except Exception:
+            json_text = json_part
         return {
             "type": "user",
-            "text": f"summary info from data table: {result}",
+            "text": json_text,
         }
     elif file_type == "pptx":
         prs = Presentation(file_path)
