@@ -95,20 +95,17 @@ def encode_base64(file_path):
 
 def generate_presentation_story(prompt, extracted_data):
     
-    input_data = [
-            {
-                "type": "message",
-                "text": f"""
-                Create a presentation story based on user prompt: {prompt}. 
-                Analyze all files and try to use them. User can send json data 
-                that is actually aggregation info of a scv file. Use that json 
-                as a source for some total or mean values to inject them in output presentation.
-                Make the presentiation as JSON which contains an array of slides. 
-                Each slide have template_id - the name of template which is used for the slide.
-                """.strip(),
-            },
-        ] + list(extracted_data.values())
-
+    input_data = []
+    # Append prompt as initial message.
+    input_data.append({
+        "type": "user",
+        "text": f"Create a presentation story based on user prompt: {prompt}. Analyze all files and try to use them. User can send json data that is actually aggregation info of a csv file. Use that json as a source for some total or mean values to inject them in output presentation. Make the presentiation as JSON which contains an array of slides. Each slide has template_id - the name of template which is used for the slide."
+    })
+    # Process extracted_data messages ensuring allowed type.
+    for d in extracted_data.values():
+        text_value = d.get("text") or d.get("filedata")
+        if text_value:
+            input_data.append({"type": "user", "text": text_value})
     print("RUN WITH", input_data)
     response = client.responses.create(
         model="o1",
