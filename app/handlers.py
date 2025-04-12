@@ -20,20 +20,21 @@ async def extract_text_from_file(file_path, file_type) -> dict[str, t.Any]:
             cache_file_path = file_path + ".cache"
             if os.path.exists(cache_file_path):
                 with open(cache_file_path, "r") as f:
-                    cached_file_id = f.read().strip()
+                    file_id = f.read().strip()
                 print("using cached pdf file id for", file_path)
                 return {
                     "type": "input_file",
-                    "file_id": cached_file_id,
+                    "file_id": file_id,
                 }
             print("upload pdf")
             with open(file_path, "rb") as f:
                 file = client.files.create(file=f, purpose="user_data")
+                file_id = file.id
             with open(cache_file_path, "w") as f:
-                f.write(file.id)
+                f.write(file_id)
             return {
                 "type": "input_file",
-                "file_id": file.id,
+                "file_id": file_id,
             }
         case "csv":
             cache_file_path = file_path + ".cache"
@@ -82,7 +83,7 @@ async def extract_text_from_file(file_path, file_type) -> dict[str, t.Any]:
         case "png" | "jpg":
             return {
                 "type": "input_image",
-                "file_data": f"data:image/{file_type};base64,{encode_base64(file_path)}",
+                "image_url": f"data:image/{file_type};base64,{encode_base64(file_path)}",
             }
         case _:
             raise NotImplementedError(f"Not known processing method for {file_type}")
