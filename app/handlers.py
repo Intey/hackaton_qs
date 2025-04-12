@@ -57,15 +57,17 @@ async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
             }
         case "pptx":
             prs = Presentation(file_path)
-            return {
-                "type": "input_file",
-                "filename": file_path,
-                "file_data": "\n".join(
+            extracted_text = "\n".join(
                     shape.text
                     for slide in prs.slides
                     for shape in slide.shapes
                     if hasattr(shape, "text")
-                ),
+                )
+            return {
+                "type": "input_text",
+                "filename": file_path,
+                "text": extracted_text,
+                "source": "pptx"
             }
         case "png" | "jpg":
             return {
