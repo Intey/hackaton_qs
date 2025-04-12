@@ -9,10 +9,12 @@ import pandas as pd
 from openai.types.responses import ResponseTextDeltaEvent
 from agents import Runner
 from my_agents import csv_agent
+import typing as t
+
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
-async def extract_text_from_file(file_path, file_type):
+async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
     if file_type == "pdf":
         with open(file_path, "rb") as f:
             file = client.files.create(file=f, purpose="user_data")
@@ -39,7 +41,7 @@ async def extract_text_from_file(file_path, file_type):
         else:
             with open(cache_file_path) as f:
                 output = f.read()
-        json_part = output.split('------')[-1].strip()
+        json_part = output.split("------")[-1].strip()
         try:
             json_obj = json.loads(json_part)
             json_text = json.dumps(json_obj)
@@ -94,23 +96,22 @@ def encode_base64(file_path):
 
 
 def generate_presentation_story(prompt, extracted_data):
-    
+
     input_data = []
     # Append prompt as initial message.
-    input_data.append({
-        "type": "user",
-        "text": f"Create a presentation story based on user prompt: {prompt}. Analyze all files and try to use them. User can send json data that is actually aggregation info of a csv file. Use that json as a source for some total or mean values to inject them in output presentation. Make the presentiation as JSON which contains an array of slides. Each slide has template_id - the name of template which is used for the slide."
-    })
+    input_data.append(
+        {
+            "type": "user",
+            "text": f"Create a presentation story based on user prompt: {prompt}. Analyze all files and try to use them. User can send json data that is actually aggregation info of a csv file. Use that json as a source for some total or mean values to inject them in output presentation. Make the presentiation as JSON which contains an array of slides. Each slide has template_id - the name of template which is used for the slide.",
+        }
+    )
     # Process extracted_data messages ensuring allowed type.
     for d in extracted_data.values():
         text_value = d.get("text") or d.get("filedata")
         if text_value:
             input_data.append({"type": "user", "text": text_value})
     print("RUN WITH", input_data)
-    response = client.responses.create(
-        model="o1",
-        input=input_data
-    )
+    response = client.responses.create(model="o1", input=input_data)
     return response.output_text
 
 
