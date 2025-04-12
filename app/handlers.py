@@ -17,9 +17,20 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 async def extract_text_from_file(file_path, file_type) -> dict[str, t.Any]:
     match file_type:
         case "pdf":
+            cache_file_path = file_path + ".cache"
+            if os.path.exists(cache_file_path):
+                with open(cache_file_path, "r") as f:
+                    cached_file_id = f.read().strip()
+                print("using cached pdf file id for", file_path)
+                return {
+                    "type": "input_file",
+                    "file_id": cached_file_id,
+                }
             print("upload pdf")
             with open(file_path, "rb") as f:
                 file = client.files.create(file=f, purpose="user_data")
+            with open(cache_file_path, "w") as f:
+                f.write(file.id)
             return {
                 "type": "input_file",
                 "file_id": file.id,
