@@ -43,6 +43,9 @@ async def extract_text_from_file(file_path, file_type):
         try:
             json_obj = json.loads(json_part)
             json_text = json.dumps(json_obj)
+            # TODO: handle this error. Try to fix. Maybe I need to retry the
+            # agent. Better would be to fix the agent always respond with
+            # correct JSON
         except Exception:
             json_text = json_part
         return {
