@@ -14,9 +14,10 @@ import typing as t
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
-async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
+async def extract_text_from_file(file_path, file_type) -> dict[str, t.Any]:
     match file_type:
         case "pdf":
+            print("upload pdf")
             with open(file_path, "rb") as f:
                 file = client.files.create(file=f, purpose="user_data")
             return {
@@ -58,21 +59,18 @@ async def extract_text_from_file(file_path, file_type) -> dict[str,t.Any]:
         case "pptx":
             prs = Presentation(file_path)
             extracted_text = "\n".join(
-                    shape.text
-                    for slide in prs.slides
-                    for shape in slide.shapes
-                    if hasattr(shape, "text")
-                )
+                shape.text
+                for slide in prs.slides
+                for shape in slide.shapes
+                if hasattr(shape, "text")
+            )
             return {
                 "type": "input_text",
-                "filename": file_path,
-                "text": extracted_text,
-                "source": "pptx"
+                "text": f"the {file_path} presentation content: {extracted_text}",
             }
         case "png" | "jpg":
             return {
                 "type": "input_image",
-                "filename": file_path,
                 "file_data": f"data:image/{file_type};base64,{encode_base64(file_path)}",
             }
         case _:
@@ -103,12 +101,24 @@ def generate_presentation_story(prompt, extracted_data):
     input_data = [
         {
             "role": "user",
-            "content": f"Create a presentation story based on user prompt: {prompt}. Analyze all files and try to use them. User can send json data that is actually aggregation info of a csv file. Use that json as a source for some total or mean values to inject them in output presentation. Make the presentiation as JSON which contains an array of slides. Each slide has template_id - the name of template which is used for the slide.",
+            "content": prompt,
         },
-        {"role": "user", "content": extracted_data}
-        ]
+        {"role": "user", "content": extracted_data},
+    ]
     print("RUN WITH", input_data)
-    response = client.responses.create(model="o3-mini", input=input_data)
+    response = client.responses.create(
+        model="gpt-4.5-preview", 
+        instructions="""Create a presentation story based on user prompt. 
+        Response with json that should be an array of slides. 
+        You can create new slides, generate new content.
+        Each slide has template_id - the name of template which is used for the
+        slide. Analyze all files and try to use them. User can send json data
+        that is actually aggregation info of a csv file. Use that json as a
+        source for some total or mean values to inject them in output
+        presentation. """,
+        input=input_data,
+        temperature=0.6
+    )
     return response.output_text
 
 
