@@ -1,5 +1,8 @@
 FROM node:18
 
+# Set npm cache to reduce repeated downloads
+RUN mkdir /npm_cache && npm config set cache /npm_cache
+
 # Install marp-cli globally
 RUN npm install -g @marp-team/marp-cli
 
