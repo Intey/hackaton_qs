@@ -1,0 +1,60 @@
+/* @theme tech */
+section {
+  background: linear-gradient(125deg, #1a1e34, #2b2e4a);
+  color: #ffffff;
+  font-family: "Segoe UI", "Roboto", Sans-Serif;
+  padding: 40px;
+}
+
+h1, h2 {
+  border-bottom: 3px solid #4DD0E1;
+  padding-bottom: 12px;
+  margin-bottom: 30px;
+}
+
+ul {
+  list-style: none;
+  padding-left: 20px;
+}
+
+ul li::before {
+  content: "▸";
+  color: #4DD0E1;
+  font-weight: bold;
+  display: inline-block; 
+  width: 1em;
+  margin-left: -1em;
+}
+
+table {
+  width: 100%;
+  margin-top: 25px;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  border: 1px solid #4DD0E1;
+  text-align: left;
+}
+
+svg.icon-brain {
+  fill: #4DD0E1;
+  width: 120px;
+  margin-bottom: 15px;
+}
+
+hr.custom-line {
+  border: none;
+  height: 2px;
+  background-color: #4DD0E1;
+  margin: 30px 0;
+}
+
+footer {
+  color: #bbb;
+  font-size: 0.7em;
+  position: absolute;
+  bottom: 20px;
+  right: 30px;
+}
