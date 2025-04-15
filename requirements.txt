@@ -1,0 +1,8 @@
+flask
+openai
+python-pptx
+pandas
+PyPDF2
+requests
+beautifulsoup4
+openai-agents
